@@ -42,18 +42,33 @@ const CityDashboard = () => {
 
     // Format Data for Bar Chart (Zone Occupancy)
     const zoneData = useMemo(() => {
-        return spots.map(spot => {
-            // If it's the live zone (ID 1), use the latest live data
+        const data = spots.length > 0 ? spots : [
+            { id: 1, name: 'Live Camera Feed Zone', total: 50, free: 0 }
+        ];
+
+        return data.map(spot => {
+            // If it's the live zone (ID 1), use the latest live data from dashboard polling
             if (spot.id === 1) {
+                const total = liveData.total_slots || spot.total;
+                const free = liveData.free_slots !== undefined ? liveData.free_slots : spot.free;
+                const occupied = total - free;
+                const percent = total > 0 ? Math.round((occupied / total) * 100) : 0;
+
                 return {
                     name: "Live Feed",
-                    occupied: liveData.total_slots > 0 ? Math.round(((liveData.total_slots - liveData.free_slots) / liveData.total_slots) * 100) : 0,
+                    occupied: percent,
+                    count: occupied,
                     full_name: spot.name
                 };
             }
+
+            const occupied = spot.total - spot.free;
+            const percent = spot.total > 0 ? Math.round((occupied / spot.total) * 100) : 0;
+
             return {
-                name: spot.name.split(' ').slice(0, 2).join(' '), // Shorten name
-                occupied: spot.total > 0 ? Math.round(((spot.total - spot.free) / spot.total) * 100) : 0,
+                name: (spot.name || 'Zone').split(' ').slice(0, 2).join(' '),
+                occupied: percent,
+                count: occupied,
                 full_name: spot.name
             };
         });
@@ -131,12 +146,12 @@ const CityDashboard = () => {
                                 <BarChart data={zoneData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" />
-                                    <YAxis label={{ value: 'Occupancy %', angle: -90, position: 'insideLeft' }} />
+                                    <YAxis label={{ value: 'Occupied Slots', angle: -90, position: 'insideLeft' }} />
                                     <Tooltip
                                         cursor={{ fill: 'transparent' }}
-                                        formatter={(value, name, props) => [`${value}% Occupied`, props.payload.full_name]}
+                                        formatter={(value, name, props) => [`${value} Slots`, props.payload.full_name]}
                                     />
-                                    <Bar dataKey="occupied" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Occupied (%)" />
+                                    <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Occupied" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

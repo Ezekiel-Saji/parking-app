@@ -13,24 +13,27 @@ const MOCK_SPOTS = [
 
 export const ParkingProvider = ({ children }) => {
     const [userLocation, setUserLocation] = useState(null);
-    const [spots, setSpots] = useState([]);
+    const [spots, setSpots] = useState(MOCK_SPOTS); // Initialize with mock data immediately
     const [destination, setDestination] = useState(null);
     const [route, setRoute] = useState(null);
     const [flowState, setFlowState] = useState('IDLE'); // IDLE, SEARCHING, RECOMMENDED, LOCKED, NAVIGATING, PARKED
     const [recommendedSpot, setRecommendedSpot] = useState(null);
 
-    // Initialize simulated spots relative to user location when available
+    // Update simulated spots relative to user location when available
     useEffect(() => {
-        if (userLocation && spots.length === 0) {
-            const initialSpots = MOCK_SPOTS.map(spot => {
-                let latOffset = spot.lat + (Math.random() * 0.001 - 0.0005);
-                let lngOffset = spot.lng + (Math.random() * 0.001 - 0.0005);
+        if (userLocation) {
+            setSpots(currentSpots => currentSpots.map(spot => {
+                // Find reference in MOCK_SPOTS for relative offsets
+                const reference = MOCK_SPOTS.find(m => m.id === spot.id);
+                if (!reference) return spot; // Keep manually added spots as they are
 
-                // Move ID 1 (Live Camera Zone) ~5km away
-                // 1 deg lat ~= 111km -> 5km ~= 0.045 deg
-                if (spot.id === 1) {
-                    latOffset += 0.045;
-                    lngOffset += 0.045;
+                let latOffset = reference.lat;
+                let lngOffset = reference.lng;
+
+                // Handle the default MOCK_SPOTS offsets relative to origin
+                if (spot.id === 1 && latOffset === 0) {
+                    latOffset = 0.045; // ~5km
+                    lngOffset = 0.045;
                 }
 
                 return {
@@ -38,8 +41,7 @@ export const ParkingProvider = ({ children }) => {
                     lat: userLocation.lat + latOffset,
                     lng: userLocation.lng + lngOffset,
                 };
-            });
-            setSpots(initialSpots);
+            }));
         }
     }, [userLocation]);
 
