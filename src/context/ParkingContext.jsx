@@ -1,0 +1,149 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const ParkingContext = createContext();
+
+export const useParking = () => useContext(ParkingContext);
+
+const MOCK_SPOTS = [
+    { id: 1, name: 'City Center Garage', lat: 0, lng: 0, status: 'available', total: 50, free: 12, price: 5 },
+    { id: 2, name: 'Market Square', lat: 0.002, lng: 0.002, status: 'filling', total: 30, free: 5, price: 8 },
+    { id: 3, name: 'Tech Park Zone A', lat: -0.002, lng: 0.001, status: 'full', total: 100, free: 0, price: 4 },
+    { id: 4, name: 'Riverside Walk', lat: 0.001, lng: -0.003, status: 'available', total: 20, free: 15, price: 6 },
+];
+
+export const ParkingProvider = ({ children }) => {
+    const [userLocation, setUserLocation] = useState(null);
+    const [spots, setSpots] = useState([]);
+    const [destination, setDestination] = useState(null);
+    const [route, setRoute] = useState(null);
+    const [flowState, setFlowState] = useState('IDLE'); // IDLE, SEARCHING, RECOMMENDED, LOCKED, NAVIGATING, PARKED
+    const [recommendedSpot, setRecommendedSpot] = useState(null);
+
+    // Initialize simulated spots relative to user location when available
+    useEffect(() => {
+        if (userLocation && spots.length === 0) {
+            const initialSpots = MOCK_SPOTS.map(spot => {
+                let latOffset = spot.lat + (Math.random() * 0.001 - 0.0005);
+                let lngOffset = spot.lng + (Math.random() * 0.001 - 0.0005);
+
+                // Move ID 1 (Live Camera Zone) ~5km away
+                // 1 deg lat ~= 111km -> 5km ~= 0.045 deg
+                if (spot.id === 1) {
+                    latOffset += 0.045;
+                    lngOffset += 0.045;
+                }
+
+                return {
+                    ...spot,
+                    lat: userLocation.lat + latOffset,
+                    lng: userLocation.lng + lngOffset,
+                };
+            });
+            setSpots(initialSpots);
+        }
+    }, [userLocation]);
+
+    // Poll Backend for Live Data (OpenCV / Python)
+    useEffect(() => {
+        const fetchLiveData = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/parking/live');
+                if (response.ok) {
+                    const data = await response.json();
+
+                    setSpots(currentSpots => {
+                        // Update the specific "Live" spot (ID 1)
+                        // If ID 1 doesn't exist, we can overwrite the first one or logic it out
+                        return currentSpots.map(spot => {
+                            if (spot.id === 1) { // Assuming ID 1 is our "Live Camera" spot
+                                return {
+                                    ...spot,
+                                    free: data.free_slots,
+                                    total: data.total_slots,
+                                    status: (data.free_slots === 0 ? 'full' : (data.free_slots < 5 ? 'filling' : 'available'))
+                                };
+                            }
+                            return spot;
+                        });
+                    });
+                }
+            } catch (error) {
+                console.warn("Backend poll failed, is FastAPI running? (localhost:8000)");
+            }
+        };
+
+        const interval = setInterval(fetchLiveData, 2000); // 2 second polling slice
+        fetchLiveData(); // Initial fetch
+
+        return () => clearInterval(interval);
+    }, []);
+
+    /* 
+    // Old Simulation Logic (Disabled)
+    useEffect(() => {
+      // ...
+    }, []); 
+    */
+
+    const requestParking = async (destCoords) => {
+        setFlowState('SEARCHING');
+        setDestination(destCoords);
+
+        // Simulate AI Processing
+        setTimeout(() => {
+            // Simple logic: Find closest available spot
+            // In real app, this would use OSRM distance matrix
+            const available = spots.filter(s => s.status !== 'full');
+            if (available.length > 0) {
+                // Pick random "best" for demo
+                const best = available[0];
+                setRecommendedSpot(best);
+                setFlowState('RECOMMENDED');
+            } else {
+                alert('No spots available!');
+                setFlowState('IDLE');
+            }
+        }, 2000);
+    };
+
+    const lockSpot = () => {
+        setFlowState('LOCKED');
+        // Start countdown logic in UI
+    };
+
+    const startNavigation = () => {
+        setFlowState('NAVIGATING');
+    };
+
+    const completeParking = () => {
+        setFlowState('PARKED');
+        if (recommendedSpot) {
+            setSpots(prev => prev.map(s => s.id === recommendedSpot.id ? { ...s, free: Math.max(0, s.free - 1), status: s.free - 1 === 0 ? 'full' : s.status } : s));
+        }
+    };
+
+    const resetFlow = () => {
+        setFlowState('IDLE');
+        setRecommendedSpot(null);
+        setDestination(null);
+        setRoute(null);
+    };
+
+    return (
+        <ParkingContext.Provider value={{
+            userLocation, setUserLocation,
+            spots,
+            destination,
+            route, setRoute,
+            flowState,
+            recommendedSpot,
+            requestParking,
+            lockSpot,
+            startNavigation,
+            completeParking,
+            resetFlow
+        }}>
+            {children}
+        </ParkingContext.Provider>
+    );
+};
