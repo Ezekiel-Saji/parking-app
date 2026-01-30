@@ -129,6 +129,25 @@ export const ParkingProvider = ({ children }) => {
         setRoute(null);
     };
 
+    const addSpot = (spotData) => {
+        const newSpot = {
+            id: spots.length + Math.floor(Math.random() * 1000), // Simple ID generation
+            status: 'available',
+            free: spotData.total,
+            ...spotData
+        };
+        setSpots(prev => [...prev, newSpot]);
+    };
+
+    const deleteSpot = (id) => {
+        // Prevent deleting the Live Camera spot (ID 1)
+        if (id === 1) {
+            alert("Cannot delete the active Live Camera Zone.");
+            return;
+        }
+        setSpots(prev => prev.filter(s => s.id !== id));
+    };
+
     return (
         <ParkingContext.Provider value={{
             userLocation, setUserLocation,
@@ -141,7 +160,9 @@ export const ParkingProvider = ({ children }) => {
             lockSpot,
             startNavigation,
             completeParking,
-            resetFlow
+            resetFlow,
+            addSpot,
+            deleteSpot
         }}>
             {children}
         </ParkingContext.Provider>

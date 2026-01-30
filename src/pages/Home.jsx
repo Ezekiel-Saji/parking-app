@@ -1,8 +1,13 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import LiveMap from '../features/Map/LiveMap';
 import BookingOverlay from '../features/Booking/BookingOverlay';
 
 const Home = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
             <LiveMap />
@@ -28,25 +33,90 @@ const Home = () => {
                 </p>
             </div>
 
-            {/* Link to Admin */}
+            {/* Links / Auth Status */}
             <div style={{
                 position: 'absolute',
                 top: '1rem',
                 right: '1rem',
-                zIndex: 1000
+                zIndex: 1000,
+                display: 'flex',
+                gap: '1rem',
+                alignItems: 'center'
             }}>
-                <a href="/admin" style={{
-                    textDecoration: 'none',
-                    background: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                    color: 'var(--color-primary)',
-                    boxShadow: 'var(--shadow-sm)'
-                }}>
-                    City Dashboard
-                </a>
+                {!user ? (
+                    <button onClick={() => navigate('/login')} style={{
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1rem',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-sm)'
+                    }}>
+                        Login
+                    </button>
+                ) : (
+                    <>
+                        {user.role === 'customer' && (
+                            <a href="/dashboard" style={{
+                                textDecoration: 'none',
+                                background: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: 'var(--radius-md)',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                color: 'var(--color-primary)',
+                                boxShadow: 'var(--shadow-sm)'
+                            }}>
+                                City Dashboard
+                            </a>
+                        )}
+
+                        {user.role === 'admin' && (
+                            <>
+                                {/* <a href="/dashboard" style={{
+                                    textDecoration: 'none',
+                                    background: 'white',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600',
+                                    color: 'var(--color-primary)',
+                                    boxShadow: 'var(--shadow-sm)'
+                                }}>
+                                    City Dashboard
+                                </a> */}
+                                <a href="/admin" style={{
+                                    textDecoration: 'none',
+                                    background: 'var(--color-text-primary)',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600',
+                                    color: 'white',
+                                    boxShadow: 'var(--shadow-sm)'
+                                }}>
+                                    Admin Console
+                                </a>
+                            </>
+                        )}
+
+                        <button onClick={logout} style={{
+                            background: 'rgba(255, 255, 255, 0.8)',
+                            color: 'var(--color-danger)',
+                            border: 'none',
+                            padding: '0.5rem',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                        }}>
+                            Logout
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );
