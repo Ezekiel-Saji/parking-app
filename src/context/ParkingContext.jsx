@@ -43,47 +43,7 @@ export const ParkingProvider = ({ children }) => {
         }
     }, [userLocation]);
 
-    // Poll Backend for Live Data (OpenCV / Python)
-    useEffect(() => {
-        const fetchLiveData = async () => {
-            try {
-                const response = await fetch('http://localhost:8000/api/parking/live');
-                if (response.ok) {
-                    const data = await response.json();
-
-                    setSpots(currentSpots => {
-                        // Update the specific "Live" spot (ID 1)
-                        // If ID 1 doesn't exist, we can overwrite the first one or logic it out
-                        return currentSpots.map(spot => {
-                            if (spot.id === 1) { // Assuming ID 1 is our "Live Camera" spot
-                                return {
-                                    ...spot,
-                                    free: data.free_slots,
-                                    total: data.total_slots,
-                                    status: (data.free_slots === 0 ? 'full' : (data.free_slots < 5 ? 'filling' : 'available'))
-                                };
-                            }
-                            return spot;
-                        });
-                    });
-                }
-            } catch (error) {
-                console.warn("Backend poll failed, is FastAPI running? (localhost:8000)");
-            }
-        };
-
-        const interval = setInterval(fetchLiveData, 2000); // 2 second polling slice
-        fetchLiveData(); // Initial fetch
-
-        return () => clearInterval(interval);
-    }, []);
-
-    /* 
-    // Old Simulation Logic (Disabled)
-    useEffect(() => {
-      // ...
-    }, []); 
-    */
+    // Live data polling moved to Dashboard as per user request
 
     const requestParking = async (destCoords) => {
         setFlowState('SEARCHING');

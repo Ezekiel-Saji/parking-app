@@ -39,7 +39,7 @@ async def get_live_parking_data():
         "id": 1,
         "name": "Live Camera Feed Zone",
         "total_slots": data["total_slots"],
-        "free_slots": data["free_slots"],
+        "free_slots": data["free_slots"]-5,
         "status": data["status"],
         "timestamp": asyncio.get_event_loop().time()
     }
