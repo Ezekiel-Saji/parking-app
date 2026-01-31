@@ -72,14 +72,10 @@ export const ParkingProvider = ({ children }) => {
                 let latOffset = reference.lat;
                 let lngOffset = reference.lng;
 
-                // Move Zone 3 to a random distance visible on map (approx 300m - 800m)
+                // Fix Zone 3 to a specific location (approx 3km from user)
                 if (spot.id === 3) {
-                    // Random offset between 0.003 and 0.008
-                    const randomLat = 0.003 + Math.random() * 0.005;
-                    const randomLng = 0.003 + Math.random() * 0.005;
-                    // Randomize direction
-                    latOffset = Math.random() > 0.5 ? randomLat : -randomLat;
-                    lngOffset = Math.random() > 0.5 ? randomLng : -randomLng;
+                    latOffset = 0.027; // ~3km
+                    lngOffset = 0.027; // ~3km
                 }
 
                 return {
