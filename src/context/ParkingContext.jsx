@@ -5,10 +5,14 @@ const ParkingContext = createContext();
 export const useParking = () => useContext(ParkingContext);
 
 const MOCK_SPOTS = [
-    { id: 1, name: 'Zone 1', lat: 0, lng: 0, status: 'available', total: 50, free: 12, price: 5 },
-    { id: 2, name: 'Zone 2', lat: 0, lng: 0, status: 'filling', total: 30, free: 5, price: 8 },
-    { id: 3, name: 'Tech Park Zone A', lat: -0.002, lng: 0.001, status: 'full', total: 100, free: 0, price: 4 },
-    { id: 4, name: 'Riverside Walk', lat: 0.001, lng: -0.003, status: 'available', total: 20, free: 15, price: 6 },
+    { id: 1, name: 'Zone 1', lat: 0.015, lng: 0.015, status: 'available', total: 50, free: 12, price: 5 }, // ~2km
+    { id: 2, name: 'Zone 2', lat: -0.045, lng: -0.045, status: 'filling', total: 30, free: 5, price: 8 }, // ~5km
+    { id: 3, name: 'Tech Park Zone A', lat: 0.080, lng: 0.020, status: 'full', total: 100, free: 0, price: 4 }, // ~10km
+    { id: 4, name: 'Riverside Walk', lat: -0.020, lng: 0.070, status: 'available', total: 20, free: 15, price: 6 }, // ~8km
+    { id: 5, name: 'Central Hospital P1', lat: 0.120, lng: -0.030, status: 'available', total: 40, free: 32, price: 3 }, // ~14km
+    { id: 6, name: 'Retail Hub Parking', lat: -0.090, lng: -0.010, status: 'filling', total: 60, free: 10, price: 7 }, // ~10km
+    { id: 7, name: 'Green Plaza', lat: 0.040, lng: -0.100, status: 'available', total: 25, free: 18, price: 4 }, // ~12km
+    { id: 8, name: 'Station Side', lat: -0.060, lng: 0.090, status: 'full', total: 15, free: 0, price: 9 }, // ~12km
 ];
 
 export const ParkingProvider = ({ children }) => {
@@ -29,16 +33,6 @@ export const ParkingProvider = ({ children }) => {
 
                 let latOffset = reference.lat;
                 let lngOffset = reference.lng;
-
-                // Handle the default MOCK_SPOTS offsets relative to origin
-                if (spot.id === 1 && reference.lat === 0) {
-                    latOffset = 0.045; // ~5km
-                    lngOffset = 0.045;
-                }
-                if (spot.id === 2 && reference.lat === 0) {
-                    latOffset = -0.045; // ~5km in opposite direction
-                    lngOffset = -0.045;
-                }
 
                 return {
                     ...spot,
@@ -101,15 +95,27 @@ export const ParkingProvider = ({ children }) => {
                 }
             }
 
-            // Simple logic: Find closest available spot
+            // AI Logic: Find nearest available spot to the SEARCHED destination
             const available = spots.filter(s => s.status !== 'full');
+
             if (available.length > 0) {
-                // Pick random "best" for demo (in real app, use shortest route)
-                const best = available[0];
-                setRecommendedSpot(best);
+                // Calculate distances to the searched destination
+                const closest = available.reduce((prev, curr) => {
+                    const distPrev = Math.sqrt(
+                        Math.pow(prev.lat - destCoords.lat, 2) +
+                        Math.pow(prev.lng - destCoords.lng, 2)
+                    );
+                    const distCurr = Math.sqrt(
+                        Math.pow(curr.lat - destCoords.lat, 2) +
+                        Math.pow(curr.lng - destCoords.lng, 2)
+                    );
+                    return distPrev < distCurr ? prev : curr;
+                });
+
+                setRecommendedSpot(closest);
                 setFlowState('RECOMMENDED');
             } else {
-                alert('No spots available!');
+                alert('No spots available near your destination!');
                 setFlowState('IDLE');
             }
         }, 1500);

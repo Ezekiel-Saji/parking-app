@@ -5,7 +5,18 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        const saved = localStorage.getItem('smartpark_user');
+        return saved ? JSON.parse(saved) : null;
+    });
+
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem('smartpark_user', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('smartpark_user');
+        }
+    }, [user]);
 
     // Check valid credentials (MOCK)
     const login = (username, password) => {

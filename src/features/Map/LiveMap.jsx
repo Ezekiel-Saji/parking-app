@@ -109,7 +109,7 @@ const RouteLayer = () => {
 };
 
 const LiveMap = () => {
-    const { spots, userLocation, recommendedSpot, requestParking } = useParking();
+    const { spots, userLocation, destination, recommendedSpot, requestParking, flowState } = useParking();
     const [isCentered, setIsCentered] = useState(false);
     const [mapInstance, setMapInstance] = useState(null);
 
@@ -145,6 +145,15 @@ const LiveMap = () => {
                 {userLocation && (
                     <Marker position={userLocation} icon={userIcon}>
                         <Popup>You are here</Popup>
+                    </Marker>
+                )}
+
+                {destination && (flowState === 'SEARCHING' || flowState === 'RECOMMENDED') && (
+                    <Marker position={[destination.lat, destination.lng]} icon={createIcon('var(--color-primary)')}>
+                        <Popup>
+                            <strong>Target Destination</strong><br />
+                            Finding nearby parking...
+                        </Popup>
                     </Marker>
                 )}
 

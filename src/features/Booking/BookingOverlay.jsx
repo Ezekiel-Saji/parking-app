@@ -14,6 +14,7 @@ const BookingOverlay = () => {
         requestParking,
         recommendedSpot,
         userLocation,
+        destination, // Destructure destination
         setRoute,
         lockSpot,
         startNavigation,
@@ -32,32 +33,44 @@ const BookingOverlay = () => {
         setLoading(true);
         const results = await searchLocation(query);
         if (results.length > 0) {
-            // Just take the first one for prototype
+            // Take the first result
             const dest = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
             requestParking(dest);
         }
         setLoading(false);
     };
 
-    // Fetch Route when Recommended Slot is found
+    // Fetch Route when Destination or Recommended Slot is found
     useEffect(() => {
-        if (flowState === 'RECOMMENDED' && recommendedSpot && userLocation) {
-            const getRoute = async () => {
-                const r = await fetchRoute(
-                    { lat: userLocation.lat, lng: userLocation.lng },
-                    { lat: recommendedSpot.lat, lng: recommendedSpot.lng }
-                );
-                if (r) {
-                    setRoute(r);
-                    setRouteInfo({
-                        distance: (r.distance / 1000).toFixed(1) + ' km',
-                        duration: (r.duration / 60).toFixed(0) + ' min'
-                    });
-                }
-            };
-            getRoute();
+        if (!userLocation) return;
+
+        const getRoute = async (target) => {
+            const r = await fetchRoute(
+                { lat: userLocation.lat, lng: userLocation.lng },
+                { lat: target.lat, lng: target.lng }
+            );
+            if (r) {
+                setRoute(r);
+                setRouteInfo({
+                    distance: (r.distance / 1000).toFixed(1) + ' km',
+                    duration: (r.duration / 60).toFixed(0) + ' min'
+                });
+            }
+        };
+
+        if (flowState === 'SEARCHING' && destination) {
+            getRoute(destination);
+        } else if (flowState === 'RECOMMENDED' && recommendedSpot) {
+            getRoute(recommendedSpot);
         }
-    }, [flowState, recommendedSpot, userLocation, setRoute]);
+    }, [flowState, recommendedSpot, destination, userLocation, setRoute]);
+
+    // Clear route info on reset
+    useEffect(() => {
+        if (flowState === 'IDLE') {
+            setRouteInfo(null);
+        }
+    }, [flowState]);
 
     // Timer logic
     useEffect(() => {

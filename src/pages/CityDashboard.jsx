@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import Card from '../components/Card';
 import { useParking } from '../context/ParkingContext';
+import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Users, Map as MapIcon, Activity } from 'lucide-react';
 
@@ -49,7 +50,7 @@ const CityDashboard = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     {/* <a href="/admin" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontSize: '0.875rem' }}>Admin Login</a> */}
-                    <a href="/map" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '600' }}>← Back to Map</a>
+                    <Link to="/map" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '600' }}>← Back to Map</Link>
                 </div>
             </header>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import LiveMap from '../features/Map/LiveMap';
 import BookingOverlay from '../features/Booking/BookingOverlay';
 
@@ -60,7 +60,7 @@ const Home = () => {
                 ) : (
                     <>
                         {user.role === 'customer' && (
-                            <a href="/dashboard" style={{
+                            <Link to="/dashboard" style={{
                                 textDecoration: 'none',
                                 background: 'white',
                                 padding: '0.5rem 1rem',
@@ -71,7 +71,7 @@ const Home = () => {
                                 boxShadow: 'var(--shadow-sm)'
                             }}>
                                 City Dashboard
-                            </a>
+                            </Link>
                         )}
 
                         {user.role === 'admin' && (
@@ -88,7 +88,7 @@ const Home = () => {
                                 }}>
                                     City Dashboard
                                 </a> */}
-                                <a href="/admin" style={{
+                                <Link to="/admin" style={{
                                     textDecoration: 'none',
                                     background: 'var(--color-text-primary)',
                                     padding: '0.5rem 1rem',
@@ -99,7 +99,7 @@ const Home = () => {
                                     boxShadow: 'var(--shadow-sm)'
                                 }}>
                                     Admin Console
-                                </a>
+                                </Link>
                             </>
                         )}
 

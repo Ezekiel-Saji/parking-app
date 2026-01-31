@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import SpotManager from '../features/Dashboard/SpotManager';
 import { Database, ShieldCheck } from 'lucide-react';
 
@@ -14,8 +15,8 @@ const AdminDashboard = () => {
                     <p style={{ color: 'var(--color-text-secondary)' }}>Manage Parking Infrastructure & Zones</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <a href="/dashboard" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontWeight: '600' }}>View Public Dashboard</a>
-                    <a href="/map" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '600' }}>← Back to Map</a>
+                    <Link to="/dashboard" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', fontWeight: '600' }}>View Public Dashboard</Link>
+                    <Link to="/map" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: '600' }}>← Back to Map</Link>
                 </div>
             </header>
 
