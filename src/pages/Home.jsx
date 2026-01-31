@@ -1,17 +1,25 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useParking } from '../context/ParkingContext';
 import { useNavigate, Link } from 'react-router-dom';
 import LiveMap from '../features/Map/LiveMap';
 import BookingOverlay from '../features/Booking/BookingOverlay';
+import PaymentModal from '../components/PaymentModal';
 
 const Home = () => {
     const { user, logout } = useAuth();
+    const { isPaymentModalOpen, cancelPayment, completePayment } = useParking();
     const navigate = useNavigate();
 
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
             <LiveMap />
             <BookingOverlay />
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={cancelPayment}
+                onSuccess={completePayment}
+            />
 
             {/* Header / Brand Overlay */}
             <div style={{

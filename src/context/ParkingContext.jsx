@@ -23,6 +23,8 @@ export const ParkingProvider = ({ children }) => {
     const [flowState, setFlowState] = useState('IDLE'); // IDLE, SEARCHING, RECOMMENDED, LOCKED, NAVIGATING, PARKED
     const [recommendedSpot, setRecommendedSpot] = useState(null);
     const [hasPaid, setHasPaid] = useState(false); // New state for premium access
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [paymentPendingAction, setPaymentPendingAction] = useState(null); // { type: 'REQUEST' | 'NAVIGATE', args: [] }
 
     // Update simulated spots relative to user location when available
     useEffect(() => {
@@ -93,14 +95,9 @@ export const ParkingProvider = ({ children }) => {
     const requestParking = async (destCoords, forcedSpotId = null) => {
         // Immediate Payment Check for Premium Zone (ID 3)
         if (forcedSpotId === 3 && !hasPaid) {
-            const paymentId = prompt("Restricted Access: Enter Payment ID for Premium Zone ($4)");
-            if (paymentId === "payment@123") {
-                setHasPaid(true);
-                alert("Payment Successful! Access Granted.");
-            } else {
-                alert("Payment Required to access this Premium Zone.");
-                return; // Abort request
-            }
+            setPaymentPendingAction({ type: 'REQUEST', args: [destCoords, forcedSpotId] });
+            setIsPaymentModalOpen(true);
+            return;
         }
 
         setFlowState('SEARCHING');
@@ -152,17 +149,34 @@ export const ParkingProvider = ({ children }) => {
     const startNavigation = () => {
         // Double-check safeguard (though likely already paid via requestParking)
         if (recommendedSpot && recommendedSpot.id === 3 && !hasPaid) {
-            const paymentId = prompt("Restricted Access: Enter Payment ID for Premium Zone ($4)");
-            if (paymentId === "payment@123") {
-                setHasPaid(true);
-                alert("Payment Successful! Navigation Unlocked.");
-            } else {
-                alert("Payment Required to navigate to this Premium Zone.");
-                setRoute(null);
-                return;
-            }
+            setPaymentPendingAction({ type: 'NAVIGATE', args: [] });
+            setIsPaymentModalOpen(true);
+            return;
         }
         setFlowState('NAVIGATING');
+    };
+
+    // Handle deferred actions after payment is confirmed
+    useEffect(() => {
+        if (hasPaid && paymentPendingAction) {
+            if (paymentPendingAction.type === 'REQUEST') {
+                requestParking(...paymentPendingAction.args);
+            } else if (paymentPendingAction.type === 'NAVIGATE') {
+                startNavigation();
+            }
+            setPaymentPendingAction(null);
+        }
+    }, [hasPaid, paymentPendingAction]);
+
+    const completePayment = () => {
+        setHasPaid(true);
+        setIsPaymentModalOpen(false);
+        // Action resumption is handled by the useEffect above
+    };
+
+    const cancelPayment = () => {
+        setIsPaymentModalOpen(false);
+        setPaymentPendingAction(null);
     };
 
     const completeParking = () => {
@@ -178,6 +192,19 @@ export const ParkingProvider = ({ children }) => {
         setDestination(null);
         setRoute(null);
         setHasPaid(false); // Reset payment status for new requests
+    };
+
+    const vacateSpot = () => {
+        if (recommendedSpot) {
+            setSpots(prev => prev.map(s => {
+                if (s.id === recommendedSpot.id) {
+                    const newFree = Math.min(s.total, s.free + 1);
+                    return { ...s, free: newFree, status: 'available' };
+                }
+                return s;
+            }));
+        }
+        resetFlow();
     };
 
     const addSpot = (spotData) => {
@@ -214,7 +241,11 @@ export const ParkingProvider = ({ children }) => {
             resetFlow,
             addSpot,
             deleteSpot,
-            hasPaid, setHasPaid
+            hasPaid, setHasPaid,
+            isPaymentModalOpen,
+            completePayment,
+            cancelPayment,
+            vacateSpot
         }}>
             {children}
         </ParkingContext.Provider>

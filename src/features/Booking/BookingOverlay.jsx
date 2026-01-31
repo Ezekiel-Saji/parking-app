@@ -19,7 +19,8 @@ const BookingOverlay = () => {
         lockSpot,
         startNavigation,
         completeParking,
-        resetFlow
+        resetFlow,
+        vacateSpot
     } = useParking();
 
     const [query, setQuery] = useState('');
@@ -211,7 +212,7 @@ const BookingOverlay = () => {
                                 </div>
                                 <h3>Parking Confirmed!</h3>
                                 <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>The slot is now marked as occupied.</p>
-                                <Button onClick={() => { resetFlow(); setQuery(''); }} variant="outline">
+                                <Button onClick={() => { vacateSpot(); setQuery(''); }} variant="outline">
                                     Return Home
                                 </Button>
                             </Card>
