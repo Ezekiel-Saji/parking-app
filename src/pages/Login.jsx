@@ -53,7 +53,8 @@ const Login = () => {
                 <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
                     <p>Demo Credentials:</p>
                     <p>Admin: admin / admin</p>
-                    <p>Customer: user / user</p>
+                    <p>User 1: user / user</p>
+                    <p>User 2: user2 / user2</p>
                 </div>
             </Card>
         </div>

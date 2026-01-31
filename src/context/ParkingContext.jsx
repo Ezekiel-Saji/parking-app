@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 const ParkingContext = createContext();
 
@@ -16,6 +17,7 @@ const MOCK_SPOTS = [
 ];
 
 export const ParkingProvider = ({ children }) => {
+    const { user } = useAuth();
     const [userLocation, setUserLocation] = useState(null);
     const [spots, setSpots] = useState(MOCK_SPOTS); // Initialize with mock data immediately
     const [destination, setDestination] = useState(null);
@@ -172,18 +174,32 @@ export const ParkingProvider = ({ children }) => {
         }, 1500);
     };
 
-    const lockSpot = () => {
+    const lockSpot = async () => {
+        if (!recommendedSpot || !user) return;
+
         setFlowState('LOCKED');
-        // Decrement spot count immediately upon locking (booking)
-        if (recommendedSpot) {
-            setSpots(prev => prev.map(s => {
-                if (s.id === recommendedSpot.id) {
-                    const newFree = Math.max(0, s.free - 1);
-                    return { ...s, free: newFree, status: newFree === 0 ? 'full' : s.status };
-                }
-                return s;
-            }));
+
+        try {
+            await fetch('http://localhost:8000/api/parking/reserve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user: user.username,
+                    zone_id: recommendedSpot.id
+                })
+            });
+        } catch (error) {
+            console.error("Failed to sync lock with backend", error);
         }
+
+        // Local state update (polling will eventually overwrite, which is fine)
+        setSpots(prev => prev.map(s => {
+            if (s.id === recommendedSpot.id) {
+                const newFree = Math.max(0, s.free - 1);
+                return { ...s, free: newFree, status: newFree === 0 ? 'full' : s.status };
+            }
+            return s;
+        }));
     };
 
     const startNavigation = () => {
@@ -224,7 +240,23 @@ export const ParkingProvider = ({ children }) => {
         // Decrement logic moved to lockSpot as per requirement
     };
 
-    const resetFlow = () => {
+    const resetFlow = async () => {
+        // If we were in a state where a spot was locked, we should release it
+        if ((flowState === 'LOCKED' || flowState === 'NAVIGATING' || flowState === 'PARKED') && recommendedSpot && user) {
+            try {
+                await fetch('http://localhost:8000/api/parking/release', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user: user.username,
+                        zone_id: recommendedSpot.id
+                    })
+                });
+            } catch (error) {
+                console.error("Failed to release lock on backend", error);
+            }
+        }
+
         setFlowState('IDLE');
         setRecommendedSpot(null);
         setDestination(null);
@@ -233,15 +265,7 @@ export const ParkingProvider = ({ children }) => {
     };
 
     const vacateSpot = () => {
-        if (recommendedSpot) {
-            setSpots(prev => prev.map(s => {
-                if (s.id === recommendedSpot.id) {
-                    const newFree = Math.min(s.total, s.free + 1);
-                    return { ...s, free: newFree, status: 'available' };
-                }
-                return s;
-            }));
-        }
+        // Release is handled in resetFlow
         resetFlow();
     };
 

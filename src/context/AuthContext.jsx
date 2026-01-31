@@ -28,6 +28,10 @@ export const AuthProvider = ({ children }) => {
             setUser({ username: 'user', role: 'customer' });
             return true;
         }
+        if (username === 'user2' && password === 'user2') {
+            setUser({ username: 'user2', role: 'customer' });
+            return true;
+        }
         return false;
     };
 

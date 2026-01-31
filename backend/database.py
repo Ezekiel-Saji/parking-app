@@ -28,6 +28,14 @@ def init_db():
             status TEXT NOT NULL
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reservations (
+            user TEXT NOT NULL,
+            zone_id INTEGER NOT NULL,
+            PRIMARY KEY (user, zone_id)
+        )
+    """)
     
     # Always refresh live mock zones to ensure they are correct and scattered
     cursor.execute("DELETE FROM parking_zones WHERE is_live = 1")
@@ -97,3 +105,29 @@ def delete_zone(zone_id):
     cursor.execute("DELETE FROM parking_zones WHERE id = ? AND is_live = 0", (zone_id,))
     conn.commit()
     conn.close()
+
+def add_reservation(user, zone_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT OR REPLACE INTO reservations (user, zone_id) VALUES (?, ?)", (user, zone_id))
+        conn.commit()
+    except Exception as e:
+        print(f"Error adding reservation: {e}")
+    finally:
+        conn.close()
+
+def remove_reservation(user, zone_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM reservations WHERE user = ? AND zone_id = ?", (user, zone_id))
+    conn.commit()
+    conn.close()
+
+def get_active_reservations_count(zone_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM reservations WHERE zone_id = ?", (zone_id,))
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
