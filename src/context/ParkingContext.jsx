@@ -22,6 +22,7 @@ export const ParkingProvider = ({ children }) => {
     const [route, setRoute] = useState(null);
     const [flowState, setFlowState] = useState('IDLE'); // IDLE, SEARCHING, RECOMMENDED, LOCKED, NAVIGATING, PARKED
     const [recommendedSpot, setRecommendedSpot] = useState(null);
+    const [hasPaid, setHasPaid] = useState(false); // New state for premium access
 
     // Update simulated spots relative to user location when available
     useEffect(() => {
@@ -33,6 +34,16 @@ export const ParkingProvider = ({ children }) => {
 
                 let latOffset = reference.lat;
                 let lngOffset = reference.lng;
+
+                // Move Zone 3 to a random distance visible on map (approx 300m - 800m)
+                if (spot.id === 3) {
+                    // Random offset between 0.003 and 0.008
+                    const randomLat = 0.003 + Math.random() * 0.005;
+                    const randomLng = 0.003 + Math.random() * 0.005;
+                    // Randomize direction
+                    latOffset = Math.random() > 0.5 ? randomLat : -randomLat;
+                    lngOffset = Math.random() > 0.5 ? randomLng : -randomLng;
+                }
 
                 return {
                     ...spot,
@@ -80,6 +91,18 @@ export const ParkingProvider = ({ children }) => {
     }, [spots.length]);
 
     const requestParking = async (destCoords, forcedSpotId = null) => {
+        // Immediate Payment Check for Premium Zone (ID 3)
+        if (forcedSpotId === 3 && !hasPaid) {
+            const paymentId = prompt("Restricted Access: Enter Payment ID for Premium Zone ($4)");
+            if (paymentId === "payment@123") {
+                setHasPaid(true);
+                alert("Payment Successful! Access Granted.");
+            } else {
+                alert("Payment Required to access this Premium Zone.");
+                return; // Abort request
+            }
+        }
+
         setFlowState('SEARCHING');
         setDestination(destCoords);
         setRoute(null); // Clear old route
@@ -127,6 +150,18 @@ export const ParkingProvider = ({ children }) => {
     };
 
     const startNavigation = () => {
+        // Double-check safeguard (though likely already paid via requestParking)
+        if (recommendedSpot && recommendedSpot.id === 3 && !hasPaid) {
+            const paymentId = prompt("Restricted Access: Enter Payment ID for Premium Zone ($4)");
+            if (paymentId === "payment@123") {
+                setHasPaid(true);
+                alert("Payment Successful! Navigation Unlocked.");
+            } else {
+                alert("Payment Required to navigate to this Premium Zone.");
+                setRoute(null);
+                return;
+            }
+        }
         setFlowState('NAVIGATING');
     };
 
@@ -142,6 +177,7 @@ export const ParkingProvider = ({ children }) => {
         setRecommendedSpot(null);
         setDestination(null);
         setRoute(null);
+        setHasPaid(false); // Reset payment status for new requests
     };
 
     const addSpot = (spotData) => {
@@ -177,7 +213,8 @@ export const ParkingProvider = ({ children }) => {
             completeParking,
             resetFlow,
             addSpot,
-            deleteSpot
+            deleteSpot,
+            hasPaid, setHasPaid
         }}>
             {children}
         </ParkingContext.Provider>
