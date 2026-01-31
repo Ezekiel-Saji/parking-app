@@ -177,7 +177,7 @@ const LiveMap = () => {
                                     }}
                                     onClick={() => {
                                         if (mapInstance) mapInstance.closePopup();
-                                        requestParking({ lat: spot.lat, lng: spot.lng });
+                                        requestParking({ lat: spot.lat, lng: spot.lng }, spot.id);
                                     }}
                                 >
                                     Navigate Here

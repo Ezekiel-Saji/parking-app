@@ -5,8 +5,8 @@ const ParkingContext = createContext();
 export const useParking = () => useContext(ParkingContext);
 
 const MOCK_SPOTS = [
-    { id: 1, name: 'City Center Garage', lat: 0, lng: 0, status: 'available', total: 50, free: 12, price: 5 },
-    { id: 2, name: 'Market Square', lat: 0.002, lng: 0.002, status: 'filling', total: 30, free: 5, price: 8 },
+    { id: 1, name: 'Zone 1', lat: 0, lng: 0, status: 'available', total: 50, free: 12, price: 5 },
+    { id: 2, name: 'Zone 2', lat: 0, lng: 0, status: 'filling', total: 30, free: 5, price: 8 },
     { id: 3, name: 'Tech Park Zone A', lat: -0.002, lng: 0.001, status: 'full', total: 100, free: 0, price: 4 },
     { id: 4, name: 'Riverside Walk', lat: 0.001, lng: -0.003, status: 'available', total: 20, free: 15, price: 6 },
 ];
@@ -31,9 +31,13 @@ export const ParkingProvider = ({ children }) => {
                 let lngOffset = reference.lng;
 
                 // Handle the default MOCK_SPOTS offsets relative to origin
-                if (spot.id === 1 && latOffset === 0) {
+                if (spot.id === 1 && reference.lat === 0) {
                     latOffset = 0.045; // ~5km
                     lngOffset = 0.045;
+                }
+                if (spot.id === 2 && reference.lat === 0) {
+                    latOffset = -0.045; // ~5km in opposite direction
+                    lngOffset = -0.045;
                 }
 
                 return {
@@ -45,19 +49,62 @@ export const ParkingProvider = ({ children }) => {
         }
     }, [userLocation]);
 
-    // Live data polling moved to Dashboard as per user request
+    // Live data polling restored and updated for multiple zones
+    useEffect(() => {
+        if (spots.length === 0) return;
 
-    const requestParking = async (destCoords) => {
+        const fetchAllZones = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/parking/all');
+                if (response.ok) {
+                    const data = await response.json();
+
+                    setSpots(currentSpots => {
+                        return currentSpots.map(spot => {
+                            const zoneUpdate = data.zones.find(z => z.id === spot.id);
+                            if (zoneUpdate) {
+                                return {
+                                    ...spot,
+                                    free: zoneUpdate.free_slots,
+                                    total: zoneUpdate.total_slots,
+                                    status: zoneUpdate.status
+                                };
+                            }
+                            return spot;
+                        });
+                    });
+                }
+            } catch (error) {
+                console.warn("Global multizone polling failed.");
+            }
+        };
+
+        const interval = setInterval(fetchAllZones, 2000);
+        fetchAllZones();
+
+        return () => clearInterval(interval);
+    }, [spots.length]);
+
+    const requestParking = async (destCoords, forcedSpotId = null) => {
         setFlowState('SEARCHING');
         setDestination(destCoords);
+        setRoute(null); // Clear old route
 
         // Simulate AI Processing
         setTimeout(() => {
+            if (forcedSpotId) {
+                const manualSpot = spots.find(s => s.id === forcedSpotId);
+                if (manualSpot) {
+                    setRecommendedSpot(manualSpot);
+                    setFlowState('RECOMMENDED');
+                    return;
+                }
+            }
+
             // Simple logic: Find closest available spot
-            // In real app, this would use OSRM distance matrix
             const available = spots.filter(s => s.status !== 'full');
             if (available.length > 0) {
-                // Pick random "best" for demo
+                // Pick random "best" for demo (in real app, use shortest route)
                 const best = available[0];
                 setRecommendedSpot(best);
                 setFlowState('RECOMMENDED');
@@ -65,7 +112,7 @@ export const ParkingProvider = ({ children }) => {
                 alert('No spots available!');
                 setFlowState('IDLE');
             }
-        }, 2000);
+        }, 1500);
     };
 
     const lockSpot = () => {

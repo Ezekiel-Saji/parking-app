@@ -8,60 +8,20 @@ const COLORS = ['#e53e3e', '#38a169'];
 
 const CityDashboard = () => {
     const { spots } = useParking();
-    const [liveData, setLiveData] = React.useState({ free_slots: 0, total_slots: 0 });
-
-    // Poll Backend for Live Data specifically for Dashboard
-    React.useEffect(() => {
-        const fetchLive = async () => {
-            try {
-                const response = await fetch('http://localhost:8000/api/parking/live');
-                if (response.ok) {
-                    const data = await response.json();
-                    setLiveData(data);
-                }
-            } catch (error) {
-                console.warn("Dashboard backend poll failed.");
-            }
-        };
-
-        const interval = setInterval(fetchLive, 2000);
-        fetchLive();
-        return () => clearInterval(interval);
-    }, []);
 
     // Calculate System Metrics
     const metrics = useMemo(() => {
-        // As per user request: Use backend values for available/total slots display
-        const totalSlots = liveData.total_slots;
-        const freeSlots = liveData.free_slots;
+        const totalSlots = spots.reduce((acc, spot) => acc + spot.total, 0);
+        const freeSlots = spots.reduce((acc, spot) => acc + spot.free, 0);
         const occupiedSlots = totalSlots - freeSlots;
         const utilization = totalSlots > 0 ? Math.round((occupiedSlots / totalSlots) * 100) : 0;
 
         return { totalSlots, freeSlots, occupiedSlots, utilization };
-    }, [liveData]);
+    }, [spots]);
 
     // Format Data for Bar Chart (Zone Occupancy)
     const zoneData = useMemo(() => {
-        const data = spots.length > 0 ? spots : [
-            { id: 1, name: 'Live Camera Feed Zone', total: 50, free: 0 }
-        ];
-
-        return data.map(spot => {
-            // If it's the live zone (ID 1), use the latest live data from dashboard polling
-            if (spot.id === 1) {
-                const total = liveData.total_slots || spot.total;
-                const free = liveData.free_slots !== undefined ? liveData.free_slots : spot.free;
-                const occupied = total - free;
-                const percent = total > 0 ? Math.round((occupied / total) * 100) : 0;
-
-                return {
-                    name: "Live Feed",
-                    occupied: percent,
-                    count: occupied,
-                    full_name: spot.name
-                };
-            }
-
+        return spots.map(spot => {
             const occupied = spot.total - spot.free;
             const percent = spot.total > 0 ? Math.round((occupied / spot.total) * 100) : 0;
 
@@ -72,7 +32,7 @@ const CityDashboard = () => {
                 full_name: spot.name
             };
         });
-    }, [spots, liveData]);
+    }, [spots]);
 
     // Format Data for Pie Chart
     const pieData = [

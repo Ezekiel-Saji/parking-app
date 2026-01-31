@@ -77,16 +77,21 @@ const SpotManager = () => {
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <Input
-                            label="Latitude (Opt)"
+                            label="Latitude"
+                            placeholder="e.g. 51.5074"
                             value={formData.lat}
                             onChange={e => setFormData({ ...formData, lat: e.target.value })}
                         />
                         <Input
-                            label="Longitude (Opt)"
+                            label="Longitude"
+                            placeholder="e.g. -0.1278"
                             value={formData.lng}
                             onChange={e => setFormData({ ...formData, lng: e.target.value })}
                         />
                     </div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
+                        Use <strong>Standard Decimal Degrees</strong>. For example, New York is 40.7128, -74.0060.
+                    </p>
                     <Button type="submit" style={{ width: '100%' }}>Create Zone</Button>
                 </form>
             </Card>
