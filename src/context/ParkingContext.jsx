@@ -25,6 +25,41 @@ export const ParkingProvider = ({ children }) => {
     const [hasPaid, setHasPaid] = useState(false); // New state for premium access
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentPendingAction, setPaymentPendingAction] = useState(null); // { type: 'REQUEST' | 'NAVIGATE', args: [] }
+    const [payments, setPayments] = useState([]);
+
+    const addPayment = async (payment) => {
+        // Optimistic update
+        setPayments(prev => [payment, ...prev]);
+
+        try {
+            await fetch('http://localhost:8000/api/payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payment)
+            });
+        } catch (error) {
+            console.error("Failed to sync payment", error);
+        }
+    };
+
+    // Poll for payments (real-time admin dashboard update)
+    useEffect(() => {
+        const fetchPayments = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/payments');
+                if (response.ok) {
+                    const data = await response.json();
+                    setPayments(data);
+                }
+            } catch (error) {
+                console.warn("Payment polling failed");
+            }
+        };
+
+        const interval = setInterval(fetchPayments, 2000);
+        fetchPayments();
+        return () => clearInterval(interval);
+    }, []);
 
     // Update simulated spots relative to user location when available
     useEffect(() => {
@@ -252,7 +287,9 @@ export const ParkingProvider = ({ children }) => {
             isPaymentModalOpen,
             completePayment,
             cancelPayment,
-            vacateSpot
+            vacateSpot,
+            payments,
+            addPayment
         }}>
             {children}
         </ParkingContext.Provider>

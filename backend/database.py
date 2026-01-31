@@ -17,6 +17,17 @@ def init_db():
             is_live BOOLEAN DEFAULT 0
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id TEXT PRIMARY KEY,
+            user TEXT NOT NULL,
+            amount REAL NOT NULL,
+            zone TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            status TEXT NOT NULL
+        )
+    """)
     
     # Always refresh live mock zones to ensure they are correct and scattered
     cursor.execute("DELETE FROM parking_zones WHERE is_live = 1")
@@ -52,6 +63,22 @@ def get_all_zones():
     zones = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return zones
+
+def add_payment(id, user, amount, zone, timestamp, status):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO payments (id, user, amount, zone, timestamp, status) VALUES (?, ?, ?, ?, ?, ?)",
+                   (id, user, amount, zone, timestamp, status))
+    conn.commit()
+    conn.close()
+
+def get_payments():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM payments ORDER BY timestamp DESC")
+    payments = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return payments
 
 def add_zone(name, lat, lng, total_slots, price):
     conn = get_db()

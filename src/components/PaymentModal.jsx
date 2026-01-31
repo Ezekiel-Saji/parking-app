@@ -5,7 +5,10 @@ import Button from './Button';
 import Input from './Input';
 import { CreditCard, CheckCircle, X, Lock } from 'lucide-react';
 
+import { useParking } from '../context/ParkingContext';
+
 const PaymentModal = ({ isOpen, onClose, onSuccess, amount = 4 }) => {
+    const { addPayment } = useParking();
     const [step, setStep] = useState('input'); // input, processing, success, receipt
     const [cardName, setCardName] = useState('');
     const [cardNumber, setCardNumber] = useState('');
@@ -77,10 +80,15 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount = 4 }) => {
             // Data structure for the QR code as per instruction 6
             const data = {
                 id: newPaymentId,
-                zone: "Zone 3", // Example zone, could be dynamic
+                zone: "Zone 3 Premium",
+                amount: amount,
+                user: cardName,
+                timestamp: new Date().toISOString(),
+                status: 'Completed',
                 valid: true
             };
             setPaymentData(data);
+            addPayment(data);
             setStep('success');
 
             // Auto transition to receipt after success animation

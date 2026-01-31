@@ -3,11 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+import asyncio
+from contextlib import asynccontextmanager
+from pydantic import BaseModel
+from typing import Optional
+
 from opencv import detector
-from opencv import detector_zone2  # Import zone 2 detector
+from opencv import detector_zone2
+from database import init_db, get_all_zones, add_zone, delete_zone, add_payment, get_payments
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize DB
+    init_db()
     # Startup: Start both background threads
     detector.start_background_thread()
     detector_zone2.start_background_thread_zone2()
@@ -17,6 +27,15 @@ async def lifespan(app: FastAPI):
     detector_zone2.stop_event_zone2.set()
 
 app = FastAPI(lifespan=lifespan)
+
+class PaymentRequest(BaseModel):
+    id: str
+    user: str
+    amount: float
+    zone: str
+    timestamp: str
+    status: str
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,3 +99,11 @@ async def get_all_parking_data():
         ],
         "timestamp": asyncio.get_event_loop().time()
     }
+@app.post("/api/payment")
+async def create_payment(payment: PaymentRequest):
+    add_payment(payment.id, payment.user, payment.amount, payment.zone, payment.timestamp, payment.status)
+    return {"status": "recorded"}
+
+@app.get("/api/payments")
+async def get_all_payments():
+    return get_payments()
