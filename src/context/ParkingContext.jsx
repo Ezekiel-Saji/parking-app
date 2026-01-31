@@ -7,7 +7,7 @@ export const useParking = () => useContext(ParkingContext);
 const MOCK_SPOTS = [
     { id: 1, name: 'Zone 1', lat: 0.015, lng: 0.015, status: 'available', total: 50, free: 12, price: 5 }, // ~2km
     { id: 2, name: 'Zone 2', lat: -0.045, lng: -0.045, status: 'filling', total: 30, free: 5, price: 8 }, // ~5km
-    { id: 3, name: 'Tech Park Zone A', lat: 0.080, lng: 0.020, status: 'full', total: 100, free: 0, price: 4 }, // ~10km
+    { id: 3, name: 'Tech Park Zone A', lat: 0.080, lng: 0.020, status: 'available', total: 50, free: 50, price: 4 }, // ~10km
     { id: 4, name: 'Riverside Walk', lat: -0.020, lng: 0.070, status: 'available', total: 20, free: 15, price: 6 }, // ~8km
     { id: 5, name: 'Central Hospital P1', lat: 0.120, lng: -0.030, status: 'available', total: 40, free: 32, price: 3 }, // ~14km
     { id: 6, name: 'Retail Hub Parking', lat: -0.090, lng: -0.010, status: 'filling', total: 60, free: 10, price: 7 }, // ~10km
@@ -143,7 +143,16 @@ export const ParkingProvider = ({ children }) => {
 
     const lockSpot = () => {
         setFlowState('LOCKED');
-        // Start countdown logic in UI
+        // Decrement spot count immediately upon locking (booking)
+        if (recommendedSpot) {
+            setSpots(prev => prev.map(s => {
+                if (s.id === recommendedSpot.id) {
+                    const newFree = Math.max(0, s.free - 1);
+                    return { ...s, free: newFree, status: newFree === 0 ? 'full' : s.status };
+                }
+                return s;
+            }));
+        }
     };
 
     const startNavigation = () => {
@@ -181,9 +190,7 @@ export const ParkingProvider = ({ children }) => {
 
     const completeParking = () => {
         setFlowState('PARKED');
-        if (recommendedSpot) {
-            setSpots(prev => prev.map(s => s.id === recommendedSpot.id ? { ...s, free: Math.max(0, s.free - 1), status: s.free - 1 === 0 ? 'full' : s.status } : s));
-        }
+        // Decrement logic moved to lockSpot as per requirement
     };
 
     const resetFlow = () => {
