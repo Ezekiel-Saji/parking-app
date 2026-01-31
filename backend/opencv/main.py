@@ -1,58 +1,81 @@
-import cv2
-import pickle
-import cvzone
-import numpy as np
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import asyncio
+from contextlib import asynccontextmanager
 
-# video feed
-cap = cv2.VideoCapture('carPark.mp4')
+from opencv import detector
+from opencv import detector_zone2  # Import zone 2 detector
 
-with open('CarParkPos', 'rb') as f:
-    posList = pickle.load(f)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start both background threads
+    detector.start_background_thread()
+    detector_zone2.start_background_thread_zone2()
+    yield
+    # Shutdown
+    detector.stop_event.set()
+    detector_zone2.stop_event_zone2.set()
 
-width, height = 107, 48
+app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def checkParkingSpace(imgPro):
-    spaceCounter = 0
+@app.get("/")
+def read_root():
+    return {"status": "Parking OS Backend Live"}
 
-    for pos in posList:
-        x, y = pos
+@app.get("/api/parking/zone1")
+async def get_zone1_parking_data():
+    data = detector.get_parking_data()
+    return {
+        "id": 1,
+        "name": "Zone 1 - City Center Garage",
+        "total_slots": data["total_slots"],
+        "free_slots": data["free_slots"],
+        "status": data["status"],
+        "timestamp": asyncio.get_event_loop().time()
+    }
 
-        imgCrop = imgPro[y:y + height, x:x + width]
-        # cv2.imshow(str(x * y), imgCrop)
-        count = cv2.countNonZero(imgCrop)
+@app.get("/api/parking/zone2")
+async def get_zone2_parking_data():
+    data = detector_zone2.get_parking_data_zone2()
+    return {
+        "id": 2,
+        "name": "Zone 2 - Parking Lot",
+        "total_slots": data["total_slots"],
+        "free_slots": data["free_slots"],
+        "status": data["status"],
+        "timestamp": asyncio.get_event_loop().time()
+    }
 
-        if count < 900:
-            color = (0, 255, 0)
-            thickness = 5
-            spaceCounter += 1
-        else:
-            color = (0, 0, 255)
-            thickness = 2
-
-        cv2.rectangle(img, pos, (pos[0] + width, pos[1] + height), color, thickness)
-        cvzone.putTextRect(img, str(count), (x, y + height - 3), scale=1,
-                           thickness=2, offset=0, colorR=color)
-
-    cvzone.putTextRect(img, f'Free:{spaceCounter}/{len(posList)}', (100, 50), scale=3,
-                       thickness=5, offset=20, colorR=(0, 200, 0))
-
-
-while True:
-
-    if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    success, img = cap.read()
-    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    imgBlur = cv2.GaussianBlur(imgGray, (3, 3), 1)
-    imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                         cv2.THRESH_BINARY_INV, 25, 16)
-    imgMedian = cv2.medianBlur(imgThreshold, 5)
-    kernel = np.ones((3, 3), np.uint8)
-    imgDilate = cv2.dilate(imgMedian, kernel, iterations=1)
-
-    checkParkingSpace(imgDilate)
-    cv2.imshow("Image", img)
-    # cv2.imshow("ImageBlur", imgBlur)
-    # cv2.imshow("ImageThres", imgMedian)
-    cv2.waitKey(10)
+@app.get("/api/parking/all")
+async def get_all_parking_data():
+    """Get data from all zones"""
+    zone1 = detector.get_parking_data()
+    zone2 = detector_zone2.get_parking_data_zone2()
+    
+    return {
+        "zones": [
+            {
+                "id": 1,
+                "name": "Zone 1 - City Center Garage",
+                "total_slots": zone1["total_slots"],
+                "free_slots": zone1["free_slots"],
+                "status": zone1["status"]
+            },
+            {
+                "id": 2,
+                "name": "Zone 2 - Parking Lot",
+                "total_slots": zone2["total_slots"],
+                "free_slots": zone2["free_slots"],
+                "status": zone2["status"]
+            }
+        ],
+        "timestamp": asyncio.get_event_loop().time()
+    }
