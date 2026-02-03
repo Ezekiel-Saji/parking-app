@@ -1,6 +1,6 @@
-# Parking OS - Real-Time Smart Parking Management
+# just park! - Real-Time Smart Parking Management
 
-Parking OS is a comprehensive, AI-powered parking management system designed to optimize parking space utilization using computer vision and interactive mapping. It provides real-time occupancy data, reservation systems, and an intuitive dashboard for both users and administrators.
+just park is a comprehensive, AI-powered parking management system designed to optimize parking space utilization using computer vision and interactive mapping. It provides real-time occupancy data, reservation systems, and an intuitive dashboard for both users and administrators.
 
 ---
 
@@ -104,4 +104,5 @@ The project is **highly feasible** for local and small-to-medium enterprise (SME
 
 ---
 
-*Developed as a modern solution for urban parking challenges.*
+*Developed as a modern solution for urban parking challenges.
+Stop searching just park!*
